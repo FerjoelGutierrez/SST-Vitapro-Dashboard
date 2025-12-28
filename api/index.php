@@ -3,198 +3,147 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SST Vitapro - Reporte</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <title>Reporte SST Vitapro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root { --blue: #1e3a8a; --light: #3b82f6; }
-        body { font-family: 'Outfit', sans-serif; background: #f1f5f9; padding: 20px 0; }
-        .main-card { background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); overflow: hidden; max-width: 800px; margin: 0 auto; }
-        .header-banner { background: linear-gradient(135deg, var(--blue), var(--light)); color: white; padding: 35px; text-align: center; }
-        .form-section { padding: 40px; }
-        .form-label { font-weight: 600; color: #1e293b; margin-bottom: 8px; font-size: 0.9rem; }
-        .btn-submit { background: var(--blue); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: 700; width: 100%; transition: 0.3s; margin-top: 20px; }
-        .btn-submit:hover { transform: translateY(-2px); background: #1e40af; box-shadow: 0 5px 15px rgba(30,58,138,0.3); }
-        .photo-box { border: 2px dashed #cbd5e1; border-radius: 12px; padding: 30px; text-align: center; cursor: pointer; background: #f8fafc; transition: 0.3s; }
-        .photo-box:hover { border-color: var(--light); background: #eff6ff; }
-        .footer-link { text-align: center; padding: 20px; }
-        .admin-trigger { color: #94a3b8; text-decoration: none; font-size: 13px; opacity: 0.6; }
-        .required-field::after { content: " *"; color: red; }
+        body { background-color: #f0f2f5; font-family: 'Inter', sans-serif; }
+        .header-brand { background: #0f172a; padding: 20px; color: white; text-align: center; border-bottom: 4px solid #2563eb; }
+        .form-card { background: white; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); padding: 30px; margin-top: -30px; margin-bottom: 50px; }
+        .section-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: #64748b; font-weight: 700; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 20px; margin-top: 20px; }
+        .btn-submit { background: #2563eb; border: none; padding: 15px; font-weight: 700; letter-spacing: 0.5px; }
+        .btn-submit:hover { background: #1d4ed8; }
+        label { font-weight: 600; font-size: 0.9rem; color: #334155; margin-bottom: 5px; }
     </style>
 </head>
 <body>
+
+    <div class="header-brand">
+        <h2 class="fw-bold mb-0">VITAPRO <span class="text-primary">SST</span></h2>
+        <p class="small opacity-75">Reporte de Actos y Condiciones Subestándar</p>
+    </div>
+
     <div class="container">
-        <!-- Notificación de éxito -->
-        <?php if (isset($_GET['success'])): ?>
-            <div class="alert alert-success alert-dismissible fade show rounded-pill px-4 mb-4 shadow-sm" role="alert">
-                <i class="fas fa-check-circle me-2"></i><strong>¡Enviado!</strong> El reporte se guardó correctamente.
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        <?php endif; ?>
-        <div class="main-card">
-            <div class="header-banner">
-                <i class="fas fa-shield-alt fa-3x mb-3"></i>
-                <h2 class="fw-bold mb-0">Sistema de Gestión SST</h2>
-                <p class="mb-0 opacity-75">Vitapro - Cero Accidentes</p>
-            </div>
-            <div class="form-section">
-                <form action="guardar.php" method="POST" enctype="multipart/form-data">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <form action="api/guardar.php" method="POST" enctype="multipart/form-data" class="form-card">
+                    
+                    <div class="section-title">1. Identificación del Reportante</div>
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label required-field">Usted es:</label>
-                            <select name="tipo_usuario" id="tipo_usuario" class="form-select" required onchange="actualizarEmpresa()">
+                            <label>Tipo de Usuario</label>
+                            <select name="tipo_usuario" class="form-select" onchange="toggleEmpresa(this.value)">
                                 <option value="Interno">Personal Interno</option>
-                                <option value="Contratista">Contratista</option>
+                                <option value="Contratista">Contratista / Visita</option>
                             </select>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label required-field">Nombre Completo:</label>
-                            <input type="text" name="nombre" class="form-control" placeholder="Ej: Juan Pérez" required>
+                        <div class="col-md-6" id="divEmpresa" style="display:none;">
+                            <label>Empresa</label>
+                            <input type="text" name="empresa" class="form-control" placeholder="Nombre de la empresa">
                         </div>
-                        <div class="col-12" id="divEmpresa" style="display:none;">
-                            <label class="form-label required-field">Empresa Contratista:</label>
-                            <input type="text" name="empresa_contratista" id="empresa_input" class="form-control" placeholder="Nombre comercial de la empresa">
+                        <div class="col-12">
+                            <label>Nombre Completo</label>
+                            <input type="text" name="nombre" class="form-control" required placeholder="Ej: Juan Pérez">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label required-field">Área del Evento:</label>
+                            <label>Área del Evento</label>
                             <select name="area" class="form-select" required>
                                 <option value="">Seleccione...</option>
-                                <option>Producción</option><option>Mantenimiento</option><option>Logística</option><option>Almacén</option><option>Administración</option><option>Calidad</option><option>Seguridad</option>
+                                <option value="Producción">Producción</option>
+                                <option value="Mantenimiento">Mantenimiento</option>
+                                <option value="Logística">Logística</option>
+                                <option value="Calidad">Calidad</option>
+                                <option value="Administración">Administración</option>
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label required-field">Hallazgo:</label>
-                            <select name="tipo_hallazgo" id="tipo_hallazgo" class="form-select" required onchange="actualizarCausas()">
-                                <option value="">Seleccione...</option>
-                                <option value="Acto Subestándar">Acto Subestándar</option>
-                                <option value="Condición Subestándar">Condición Subestándar</option>
+                            <label>Nivel de Riesgo (Percepción)</label>
+                            <select name="riesgo" class="form-select">
+                                <option value="Bajo">🟢 Bajo (No detiene proceso)</option>
+                                <option value="Medio">🟡 Medio (Atención requerida)</option>
+                                <option value="Alto">🔴 Alto (Peligro Inminente)</option>
                             </select>
                         </div>
+                    </div>
+
+                    <div class="section-title">2. Clasificación del Evento</div>
+                    <div class="mb-3">
+                        <label>Tipo de Hallazgo</label>
+                        <select name="hallazgo" id="tipoHallazgo" class="form-select" onchange="cargarCausas()" required>
+                            <option value="">Seleccione...</option>
+                            <option value="Acto Subestándar">⚠️ Acto Subestándar (Comportamiento)</option>
+                            <option value="Condición Subestándar">🔧 Condición Subestándar (Entorno)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label>Clasificación Específica</label>
+                        <select name="causa_especifica" id="causaEspecifica" class="form-select" required>
+                            <option value="">Primero seleccione tipo...</option>
+                        </select>
+                    </div>
+
+                    <div class="section-title">3. Descripción y Evidencia</div>
+                    
+                    <div class="mb-3">
+                        <label>Descripción del Evento</label>
+                        <textarea name="descripcion" class="form-control" rows="3" required placeholder="Describe qué observaste..."></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Acción Inmediata Tomada (Opcional)</label>
+                        <textarea name="accion_inmediata" class="form-control" rows="2" placeholder="¿Hiciste algo para corregirlo en el momento? Ej: Se colocó cinta de peligro, se habló con el operador..."></textarea>
+                    </div>
+
+                    <div class="row g-3 mb-4">
                         <div class="col-md-6">
-                            <label class="form-label required-field">Nivel de Riesgo:</label>
-                            <select name="nivel_riesgo" class="form-select" required>
-                                <option value="Bajo">🟢 Bajo</option>
-                                <option value="Medio">🟡 Medio</option>
-                                <option value="Alto">🔴 Alto</option>
-                            </select>
+                            <label>Aviso SAP (Si aplica)</label>
+                            <input type="text" name="sap" class="form-control" placeholder="Ej: 10002456">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label required-field">Clasificación Específica:</label>
-                            <select name="causa_especifica" id="causa_especifica" class="form-select" required disabled>
-                                <option value="">Primero seleccione hallazgo...</option>
-                            </select>
-                        </div>
-                        
-                        <!-- NUEVOS CAMPOS DE SEGUIMIENTO -->
-                        <div class="col-md-6">
-                            <label class="form-label">N° Aviso SAP (Opcional):</label>
-                            <input type="text" name="aviso_sap" class="form-control" placeholder="Ej: 10002456">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold">¿Se detuvo actividad?</label>
-                            <select name="detuvo_actividad" class="form-select">
+                            <label>¿Se detuvo actividad?</label>
+                            <select name="detuvo" class="form-select">
                                 <option value="NO">NO</option>
                                 <option value="SI">SI</option>
                             </select>
                         </div>
-                        <div class="col-12">
-                            <label class="form-label required-field">Descripción Detallada:</label>
-                            <textarea name="descripcion" class="form-control" rows="3" required placeholder="Explique qué sucedió y qué medidas inmediatas se tomaron..."></textarea>
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label required-field">Evidencia Fotográfica:</label>
-                            <div class="photo-box" onclick="document.getElementById('foto').click()">
-                                <i class="fas fa-camera fa-2x mb-2 text-muted"></i>
-                                <p class="mb-0 fw-bold" id="fileName">Toque para seleccionar foto</p>
-                            </div>
-                            <input type="file" name="foto" id="foto" class="d-none" accept="image/*" required onchange="actualizarNombreFoto(this)">
-                        </div>
-                        <div class="col-12">
-                            <button type="submit" class="btn btn-submit">ENVIAR REPORTE OFICIAL</button>
-                        </div>
                     </div>
+
+                    <div class="mb-4">
+                        <label class="d-block mb-2">Evidencia Fotográfica</label>
+                        <input type="file" name="foto" class="form-control" accept="image/*" capture="environment">
+                        <div class="form-text">Toma una foto clara del acto o condición.</div>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-submit btn-lg">ENVIAR REPORTE</button>
+                    </div>
+
                 </form>
             </div>
         </div>
-        <div class="footer-link">
-            <a href="#" class="admin-trigger" data-bs-toggle="modal" data-bs-target="#loginModal"><i class="fas fa-lock"></i> Acceso Administrativo</a>
-        </div>
     </div>
-    <!-- Modal Login -->
-    <div class="modal fade" id="loginModal" tabindex="-1">
-        <div class="modal-dialog modal-sm modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg">
-                <div class="modal-body p-4 text-center">
-                    <h5 class="fw-bold mb-3">Login Admin</h5>
-                    <form action="login.php" method="POST">
-                        <input type="text" name="usuario" class="form-control mb-2" placeholder="Usuario" required>
-                        <input type="password" name="password" class="form-control mb-3" placeholder="Clave" required>
-                        <button type="submit" class="btn btn-primary w-100">Entrar</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
     <script>
-        function actualizarEmpresa() {
-            const tipo = document.getElementById('tipo_usuario').value;
-            const div = document.getElementById('divEmpresa');
-            const input = document.getElementById('empresa_input');
-            if (tipo === 'Contratista') {
-                div.style.display = 'block';
-                input.required = true;
-            } else {
-                div.style.display = 'none';
-                input.required = false;
-                input.value = '';
-            }
+        function toggleEmpresa(val) {
+            document.getElementById('divEmpresa').style.display = (val === 'Contratista') ? 'block' : 'none';
         }
-        function actualizarCausas() {
-            const tipo = document.getElementById('tipo_hallazgo').value;
-            const causa = document.getElementById('causa_especifica');
-            causa.innerHTML = '<option value="">Seleccione...</option>';
+
+        function cargarCausas() {
+            const tipo = document.getElementById('tipoHallazgo').value;
+            const select = document.getElementById('causaEspecifica');
+            select.innerHTML = "";
+
+            const actos = ["No uso de EPP", "Operar sin autorización", "Uso incorrecto de herramientas", "Posición inadecuada", "Bromas / Juegos", "Exceso de velocidad", "Omitir señalización"];
+            const condiciones = ["Orden y Limpieza deficiente", "Herramientas defectuosas", "Ruido excesivo", "Iluminación deficiente", "Falta de señalización", "Piso resbaloso/irregular", "Riesgo de incendio"];
+
+            let opciones = (tipo === "Acto Subestándar") ? actos : condiciones;
             
-            if (!tipo) {
-                causa.disabled = true;
-                return;
-            }
-            
-            causa.disabled = false;
-            const opciones = {
-                'Acto Subestándar': [
-                    'No uso de EPP', 
-                    'Uso incorrecto de EPP', 
-                    'Distracción', 
-                    'Procedimiento incorrecto', 
-                    'Postura incorrecta', 
-                    'Uso de celular',
-                    'Otros'
-                ],
-                'Condición Subestándar': [
-                    'Herramientas defectuosas', 
-                    'Piso resbaladizo', 
-                    'Cables expuestos', 
-                    'Iluminación deficiente', 
-                    'Falta de orden y limpieza',
-                    'Equipos sin protección',
-                    'Otros'
-                ]
-            };
-            
-            if (opciones[tipo]) {
-                opciones[tipo].forEach(opt => {
-                    let el = document.createElement('option');
-                    el.value = el.textContent = opt;
-                    causa.appendChild(el);
-                });
-            }
-        }
-        function actualizarNombreFoto(input) {
-            if (input.files && input.files[0]) {
-                document.getElementById('fileName').innerHTML = '<i class="fas fa-check-circle text-success fs-5"></i><br>' + input.files[0].name;
-            }
+            opciones.forEach(op => {
+                let option = document.createElement("option");
+                option.text = op;
+                option.value = op;
+                select.add(option);
+            });
         }
     </script>
 </body>
