@@ -19,7 +19,6 @@ try {
     $kpi = $pdo->query($sqlKPI)->fetch(PDO::FETCH_ASSOC);
 
     // 2. CONSULTAS PARA GRÁFICOS (TOP 5 REPETIDOS)
-    // CORRECCIÓN AQUÍ: Cambié 'descripcion_breve' por 'descripcion'
     // Top Actos
     $sqlActos = "SELECT descripcion, COUNT(*) as cantidad 
                  FROM reportes WHERE tipo_hallazgo LIKE '%Acto%' 
@@ -199,7 +198,7 @@ try {
         <div class="modal-dialog modal-dialog-centered text-center">
             <div class="modal-content p-4">
                 <h4>Código QR Planta</h4>
-                <img src="https://chart.googleapis.com/chart?chs=250x250&cht=qr&chl=<?php echo urlencode('https://'.$_SERVER['HTTP_HOST'].'/index.php'); ?>" class="img-fluid mx-auto my-3">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=<?php echo urlencode('https://'.$_SERVER['HTTP_HOST'].'/index.php'); ?>" class="img-fluid mx-auto my-3" alt="Código QR">
                 <button class="btn btn-dark" onclick="window.print()">Imprimir</button>
             </div>
         </div>
@@ -208,7 +207,7 @@ try {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-        // CORRECCIÓN AQUÍ: Cambiamos 'descripcion_breve' por 'descripcion' en los labels
+        // Configuración de Gráficos usando la columna 'descripcion'
         const dataActos = {
             labels: <?php echo json_encode(array_column($topActos, 'descripcion')); ?>,
             datasets: [{
