@@ -1,22 +1,22 @@
 <?php
-// Configuración robusta de sesiones para Vercel
-if (session_status() === PHP_SESSION_NONE) {
-    ini_set('session.save_path', '/tmp');
-    session_start();
-}
-// Credenciales desde variables de entorno (Vercel)
-$host = getenv('DB_HOST');
-$port = getenv('DB_PORT') ?: '6543';
-$dbname = getenv('DB_NAME') ?: 'postgres';
-$user = getenv('DB_USER');
-$password = getenv('DB_PASS');
+/**
+ * Conexión a Base de Datos Supabase (PostgreSQL)
+ * Usamos PDO para máxima seguridad.
+ */
+
+// Si usas variables de entorno en Vercel (Recomendado):
+$host = getenv('DB_HOST') ?: 'tu-host-de-supabase.supabase.co';
+$db   = getenv('DB_NAME') ?: 'postgres';
+$user = getenv('DB_USER') ?: 'postgres';
+$pass = getenv('DB_PASS') ?: 'tu-contraseña-segura';
+$port = getenv('DB_PORT') ?: '5432';
+
+$dsn = "pgsql:host=$host;port=$port;dbname=$db";
+
 try {
-    $dsn = "pgsql:host=$host;port=$port;dbname=$dbname;sslmode=require";
-    $pdo = new PDO($dsn, $user, $password, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
-    ]);
+    $pdo = new PDO($dsn, $user, $pass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
 } catch (PDOException $e) {
-    die("Error de conexión: " . $e->getMessage());
+    // Si falla, mostramos mensaje (en producción idealmente no mostrar detalles)
+    die("Error de conexión a Base de Datos: " . $e->getMessage());
 }
 ?>
