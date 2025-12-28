@@ -1,111 +1,68 @@
 <?php
 require_once 'conexion.php';
-
-if (!isset($_GET['id'])) die("ID no especificado");
-$id = $_GET['id'];
-
-// Obtener datos del reporte
-$stmt = $pdo->prepare("SELECT * FROM reportes WHERE id = ?");
-$stmt->execute([$id]);
-$r = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if (!$r) die("Reporte no encontrado");
-
-// Definir colores según riesgo
-$colorRiesgo = '#28a745'; // Verde
-$textoRiesgo = 'BAJO';
-if($r['nivel_riesgo'] == 'Medio') { $colorRiesgo = '#ffc107'; $textoRiesgo = 'MEDIO'; }
-if($r['nivel_riesgo'] == 'Alto') { $colorRiesgo = '#dc3545'; $textoRiesgo = 'ALTO'; }
+$id = $_GET['id'] ?? die("Acceso denegado");
+$r = $pdo->prepare("SELECT * FROM reportes WHERE id = ?");
+$r->execute([$id]);
+$data = $r->fetch(PDO::FETCH_ASSOC);
+$color = ($data['nivel_riesgo'] == 'Alto') ? '#ef4444' : '#10b981';
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Reporte SST #<?php echo $id; ?></title>
+    <title>Informe SST - Vitapro</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #555; margin: 0; padding: 20px; }
-        .page { background: white; width: 21cm; min-height: 29.7cm; margin: 0 auto; padding: 2cm; box-shadow: 0 0 10px rgba(0,0,0,0.5); position: relative; }
-        .header { border-bottom: 2px solid #003366; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
-        .logo { color: #003366; font-size: 24px; font-weight: bold; }
-        .title { text-align: right; }
-        .box { border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; border-radius: 5px; }
-        .label { color: #666; font-size: 12px; text-transform: uppercase; font-weight: bold; margin-bottom: 5px; }
-        .value { font-size: 16px; color: #000; font-weight: 500; }
-        .risk-badge { background: <?php echo $colorRiesgo; ?>; color: white; padding: 5px 15px; border-radius: 4px; font-weight: bold; display: inline-block; }
-        .photo-container { text-align: center; margin-top: 20px; border: 2px dashed #ccc; padding: 10px; }
-        .photo-container img { max-width: 100%; max-height: 400px; }
-        .footer { position: absolute; bottom: 2cm; left: 2cm; right: 2cm; text-align: center; font-size: 11px; color: #999; border-top: 1px solid #eee; padding-top: 10px; }
-        
-        /* Botón de imprimir que no sale en el papel */
-        .btn-print { position: fixed; top: 20px; right: 20px; background: #007bff; color: white; padding: 15px 30px; border: none; border-radius: 50px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 1000; }
-        .btn-print:hover { background: #0056b3; }
-        
-        @media print {
-            body { background: white; padding: 0; }
-            .page { box-shadow: none; margin: 0; width: 100%; }
-            .btn-print { display: none; }
-        }
+        @page { size: A4; margin: 0; }
+        body { font-family: 'Segoe UI', sans-serif; background: #eee; margin: 0; padding: 20px; }
+        .page { background: white; width: 210mm; min-height: 297mm; margin: 0 auto; padding: 40px; box-sizing: border-box; position: relative; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid #003366; padding-bottom: 20px; margin-bottom: 30px; }
+        .logo-text { font-size: 28px; font-weight: 800; color: #003366; letter-spacing: -1px; }
+        .status-badge { background: <?php echo $color; ?>; color: white; padding: 10px 20px; border-radius: 50px; font-weight: bold; text-transform: uppercase; font-size: 12px; }
+        .section-title { background: #f1f5f9; padding: 8px 15px; font-weight: 700; color: #475569; border-radius: 6px; margin-top: 25px; margin-bottom: 15px; font-size: 11px; text-transform: uppercase; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 15px; }
+        .info-box { border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; }
+        .label { font-size: 10px; color: #94a3b8; font-weight: bold; }
+        .value { font-size: 14px; color: #1e293b; font-weight: 600; margin-top: 2px; }
+        .photo-frame { border: 2px solid #e2e8f0; border-radius: 12px; padding: 10px; text-align: center; background: #fafafa; margin-top: 20px; }
+        .photo-frame img { max-width: 100%; max-height: 450px; border-radius: 8px; }
+        .btn-print { position: fixed; right: 30px; top: 30px; background: #2563eb; color: white; border: none; padding: 15px 25px; border-radius: 50px; font-weight: bold; cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 100; }
+        @media print { .btn-print { display: none; } body { padding: 0; } }
     </style>
 </head>
 <body>
-
-    <button class="btn-print" onclick="window.print()">🖨️ IMPRIMIR / GUARDAR PDF</button>
-
+    <button class="btn-print" onclick="window.print()"><i class="fas fa-print"></i> GUARDAR / IMPRIMIR PDF</button>
     <div class="page">
         <div class="header">
-            <div class="logo">VITAPRO <span style="color:#28a745">SST</span></div>
-            <div class="title">
-                <div style="font-size: 18px; font-weight: bold;">REPORTE DE INCIDENTE</div>
-                <div style="font-size: 14px; color: #666;">Folio #<?php echo str_pad($id, 5, "0", STR_PAD_LEFT); ?></div>
+            <div class="logo-text">VITAPRO <span style="color:#10b981">SST</span></div>
+            <div style="text-align: right;">
+                <div style="font-size: 18px; font-weight: 800; color: #1e293b;">REPORTE DE HALLAZGO</div>
+                <div style="color: #64748b; font-size: 12px;">Nº Seguimiento: <strong>#<?php echo str_pad($data['id'], 6, "0", STR_PAD_LEFT); ?></strong></div>
             </div>
         </div>
-
-        <div style="display: flex; gap: 20px;">
-            <div class="box" style="flex: 1;">
-                <div class="label">Fecha y Hora</div>
-                <div class="value"><?php echo date('d/m/Y H:i', strtotime($r['fecha'])); ?></div>
-            </div>
-            <div class="box" style="flex: 1;">
-                <div class="label">Nivel de Riesgo</div>
-                <div class="risk-badge"><?php echo $r['nivel_riesgo']; ?></div>
-            </div>
+        <div class="status-badge" style="float: right;">Riesgo <?php echo $data['nivel_riesgo']; ?></div>
+        <div style="clear: both;"></div>
+        <div class="section-title">Información General</div>
+        <div class="grid">
+            <div class="info-box"><div class="label">Fecha y Hora de Registro</div><div class="value"><?php echo date('d/m/Y H:i', strtotime($data['fecha'])); ?></div></div>
+            <div class="info-box"><div class="label">Colaborador Reportante</div><div class="value"><?php echo htmlspecialchars($data['nombre']); ?></div></div>
         </div>
-
-        <div class="box">
-            <div class="label">Reportante</div>
-            <div class="value"><?php echo htmlspecialchars($r['nombre']); ?></div>
+        <div class="grid">
+            <div class="info-box"><div class="label">Área del Evento</div><div class="value"><?php echo htmlspecialchars($data['area']); ?></div></div>
+            <div class="info-box"><div class="label">Clasificación Técnica</div><div class="value"><?php echo htmlspecialchars($data['tipo_hallazgo']); ?></div></div>
         </div>
-
-        <div style="display: flex; gap: 20px;">
-            <div class="box" style="flex: 1;">
-                <div class="label">Tipo de Hallazgo</div>
-                <div class="value"><?php echo htmlspecialchars($r['tipo_hallazgo']); ?></div>
-            </div>
-            <div class="box" style="flex: 1;">
-                <div class="label">Aviso SAP (Opcional)</div>
-                <div class="value"><?php echo $r['aviso_sap'] ? $r['aviso_sap'] : 'N/A'; ?></div>
-            </div>
-        </div>
-
-        <div class="box">
-            <div class="label">Descripción Detallada</div>
-            <div class="value" style="line-height: 1.5;">
-                <?php echo nl2br(htmlspecialchars($r['descripcion'])); ?>
-            </div>
-        </div>
-
-        <?php if ($r['foto_path']): ?>
-        <div class="label">Evidencia Fotográfica</div>
-        <div class="photo-container">
-            <img src="../<?php echo $r['foto_path']; ?>" alt="Evidencia">
+        <div class="section-title">Detalles del Hallazgo</div>
+        <div class="info-box" style="margin-bottom: 15px;"><div class="label">Causa Específica Citada</div><div class="value"><?php echo htmlspecialchars($data['causa_especifica']); ?></div></div>
+        <div class="info-box"><div class="label">Descripción Detallada</div><div class="value" style="font-weight: 400; line-height: 1.6; text-align: justify;"><?php echo nl2br(htmlspecialchars($data['descripcion'])); ?></div></div>
+        <?php if($data['foto_path']): ?>
+        <div class="section-title">Evidencia Fotográfica de Campo</div>
+        <div class="photo-frame">
+            <!-- NOTA: Eliminamos el ../ porque la URL ya es absoluta desde Supabase -->
+            <img src="<?php echo $data['foto_path']; ?>" alt="Evidencia SST">
         </div>
         <?php endif; ?>
-
-        <div class="footer">
-            Reporte generado automáticamente por el Sistema de Gestión SST - Vitapro.<br>
-            Fecha de impresión: <?php echo date('d/m/Y H:i:s'); ?>
+        <div style="position: absolute; bottom: 40px; left: 40px; right: 40px; border-top: 1px solid #eee; padding-top: 15px; font-size: 10px; color: #94a3b8; text-align: center;">
+            Documento generado por el Portal de Gestión SST Vitapro. Verificado por el Sistema de Seguridad y Salud en el Trabajo.
         </div>
     </div>
-
 </body>
 </html>
