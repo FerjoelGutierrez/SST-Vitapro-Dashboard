@@ -9,7 +9,6 @@ require_once 'conexion.php';
 
 try {
     // 1. CONSULTAS PARA TARJETAS (KPIs)
-    // Usamos SUM con CASE para contar condicionalmente en una sola consulta rápida
     $sqlKPI = "SELECT 
         COUNT(*) as total,
         SUM(CASE WHEN nivel_riesgo = 'Alto' THEN 1 ELSE 0 END) as criticos,
@@ -20,16 +19,17 @@ try {
     $kpi = $pdo->query($sqlKPI)->fetch(PDO::FETCH_ASSOC);
 
     // 2. CONSULTAS PARA GRÁFICOS (TOP 5 REPETIDOS)
+    // CORRECCIÓN AQUÍ: Cambié 'descripcion_breve' por 'descripcion'
     // Top Actos
-    $sqlActos = "SELECT descripcion_breve, COUNT(*) as cantidad 
+    $sqlActos = "SELECT descripcion, COUNT(*) as cantidad 
                  FROM reportes WHERE tipo_hallazgo LIKE '%Acto%' 
-                 GROUP BY descripcion_breve ORDER BY cantidad DESC LIMIT 5";
+                 GROUP BY descripcion ORDER BY cantidad DESC LIMIT 5";
     $topActos = $pdo->query($sqlActos)->fetchAll(PDO::FETCH_ASSOC);
 
     // Top Condiciones
-    $sqlCond = "SELECT descripcion_breve, COUNT(*) as cantidad 
+    $sqlCond = "SELECT descripcion, COUNT(*) as cantidad 
                 FROM reportes WHERE tipo_hallazgo LIKE '%Condición%' 
-                GROUP BY descripcion_breve ORDER BY cantidad DESC LIMIT 5";
+                GROUP BY descripcion ORDER BY cantidad DESC LIMIT 5";
     $topCond = $pdo->query($sqlCond)->fetchAll(PDO::FETCH_ASSOC);
 
     // 3. TABLA GENERAL
@@ -167,7 +167,9 @@ try {
                                     <?php echo $r['tipo_hallazgo']; ?>
                                 </span>
                             </td>
-                            <td class="small text-muted"><?php echo substr($r['descripcion_breve'], 0, 40) . '...'; ?></td>
+                            <td class="small text-muted">
+                                <?php echo substr($r['descripcion'] ?? $r['detalle'] ?? 'Sin descripción', 0, 40) . '...'; ?>
+                            </td>
                             <td>
                                 <span class="badge <?php echo $r['nivel_riesgo'] == 'Alto' ? 'bg-danger' : 'bg-success'; ?>">
                                     <?php echo $r['nivel_riesgo']; ?>
@@ -206,9 +208,9 @@ try {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-        // 1. Datos para Actos
+        // CORRECCIÓN AQUÍ: Cambiamos 'descripcion_breve' por 'descripcion' en los labels
         const dataActos = {
-            labels: <?php echo json_encode(array_column($topActos, 'descripcion_breve')); ?>,
+            labels: <?php echo json_encode(array_column($topActos, 'descripcion')); ?>,
             datasets: [{
                 label: 'Frecuencia',
                 data: <?php echo json_encode(array_column($topActos, 'cantidad')); ?>,
@@ -217,9 +219,8 @@ try {
             }]
         };
 
-        // 2. Datos para Condiciones
         const dataCond = {
-            labels: <?php echo json_encode(array_column($topCond, 'descripcion_breve')); ?>,
+            labels: <?php echo json_encode(array_column($topCond, 'descripcion')); ?>,
             datasets: [{
                 label: 'Frecuencia',
                 data: <?php echo json_encode(array_column($topCond, 'cantidad')); ?>,
@@ -228,14 +229,12 @@ try {
             }]
         };
 
-        // Renderizar Gráfico Actos
         new Chart(document.getElementById('chartActos'), {
             type: 'bar',
             data: dataActos,
             options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } } }
         });
 
-        // Renderizar Gráfico Condiciones
         new Chart(document.getElementById('chartCondiciones'), {
             type: 'bar',
             data: dataCond,
