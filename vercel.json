@@ -5,6 +5,12 @@
     }
   },
   "routes": [
+    { "src": "/", "dest": "/api/index.php" },
+    { "src": "/index", "dest": "/api/index.php" },
+    { "src": "/guardar", "dest": "/api/guardar.php" },
+    { "src": "/login", "dest": "/api/login.php" },
+    { "src": "/admin", "dest": "/api/admin_nuevo.php" },
+    { "src": "/logout", "dest": "/api/logout.php" },
     { "src": "/(.*)", "dest": "/api/$1" }
   ]
 }
