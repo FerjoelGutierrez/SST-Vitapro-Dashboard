@@ -1,320 +1,164 @@
 <?php
-// 1. SEGURIDAD: Verificar cookie
-if (!isset($_COOKIE['auth_token'])) {
-    die("<div style='padding:50px;text-align:center;font-family:sans-serif;'>⚠️ Acceso Denegado. Por favor inicie sesión en el Dashboard.</div>");
-}
+// Asegurar que no se cachee
+header("Cache-Control: no-cache, must-revalidate");
+header("Expires: Sat, 26 Jul 1997 05:00:00 GMT");
 
+if (!isset($_COOKIE['auth_token'])) die("Debe iniciar sesión.");
 require_once 'conexion.php';
 
-// 2. OBTENER DATOS
 $id = $_GET['id'] ?? 0;
 $stmt = $pdo->prepare("SELECT * FROM reportes WHERE id = ?");
 $stmt->execute([$id]);
 $r = $stmt->fetch(PDO::FETCH_ASSOC);
 
-if (!$r) die("El reporte #$id no existe.");
+if (!$r) die("Reporte no encontrado");
 
-// 3. LÓGICA DE COLORES Y DATOS
-$bg_riesgo = '#22c55e'; // Verde
-if ($r['nivel_riesgo'] == 'Medio') $bg_riesgo = '#eab308'; // Amarillo
-if ($r['nivel_riesgo'] == 'Alto') $bg_riesgo = '#ef4444'; // Rojo
-
-// Separar descripción de acción inmediata (si existe el separador)
-$desc_real = $r['descripcion'];
-$accion = "No registrada en el momento del reporte.";
-
+// Preparar textos (Separando acción de descripción)
+$descripcion = $r['descripcion'];
+$accion = "No se registró acción inmediata.";
+// Buscamos si guardamos la acción con el separador especial
 if (strpos($r['descripcion'], '|| ACCION_TOMADA:') !== false) {
     $parts = explode('|| ACCION_TOMADA:', $r['descripcion']);
-    $desc_real = trim($parts[0]);
+    $descripcion = trim($parts[0]);
     $accion = trim($parts[1]);
 }
+
+// Colores
+$color = '#22c55e'; // Verde
+if($r['nivel_riesgo'] == 'Medio') $color = '#eab308'; // Amarillo
+if($r['nivel_riesgo'] == 'Alto') $color = '#ef4444'; // Rojo
+
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Reporte #<?php echo str_pad($r['id'], 5, '0', STR_PAD_LEFT); ?> - SST</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <title>Reporte Técnico #<?php echo $id; ?></title>
     <style>
-        /* ESTILOS DE IMPRESIÓN EXACTOS */
-        body { 
-            background: #525659; 
-            font-family: 'Inter', sans-serif; 
-            margin: 0; 
-            padding: 40px; 
-            display: flex; 
-            justify-content: center; 
-        }
+        body { font-family: Arial, sans-serif; background: #555; padding: 30px; display: flex; justify-content: center; }
+        .page { background: white; width: 21cm; min-height: 29.7cm; box-shadow: 0 0 20px rgba(0,0,0,0.5); position: relative; }
         
-        /* La Hoja de Papel A4 */
-        .sheet { 
-            background: white; 
-            width: 210mm; 
-            min-height: 297mm; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
-            position: relative;
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
-        }
+        /* HEADER PRO */
+        .header { background: #0f172a; color: white; padding: 30px 40px; border-bottom: 5px solid #2563eb; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 28px; font-weight: bold; letter-spacing: -1px; }
+        .logo span { color: #3b82f6; }
+        .meta { text-align: right; font-size: 12px; line-height: 1.4; }
+        .meta strong { font-size: 18px; color: #fff; }
 
-        /* Encabezado Corporativo */
-        .header {
-            background-color: #0f172a; /* Azul Vitapro Oscuro */
-            color: white;
-            padding: 30px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 6px solid #2563eb; /* Línea azul brillante */
-        }
+        .body-content { padding: 40px; }
+
+        /* TABLA DE DATOS */
+        .data-table { width: 100%; border-collapse: collapse; margin-bottom: 25px; }
+        .data-table th, .data-table td { border: 1px solid #e2e8f0; padding: 12px; text-align: left; }
+        .data-table th { background: #f1f5f9; color: #64748b; font-size: 10px; text-transform: uppercase; width: 30%; }
+        .data-table td { font-size: 14px; font-weight: 600; color: #1e293b; }
+
+        /* SECCIONES */
+        .section-title { color: #0f172a; font-size: 14px; font-weight: bold; border-bottom: 2px solid #0f172a; padding-bottom: 5px; margin-bottom: 15px; margin-top: 30px; text-transform: uppercase; }
+
+        /* TEXTO LARGO */
+        .text-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 5px; font-size: 13px; line-height: 1.6; color: #334155; text-align: justify; }
         
-        .logo-text { font-size: 28px; font-weight: 800; letter-spacing: -1px; margin: 0; }
-        .logo-sub { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; opacity: 0.8; }
-        
-        .report-meta { text-align: right; }
-        .report-id { font-size: 20px; font-weight: 700; color: #60a5fa; }
-        .report-date { font-size: 12px; opacity: 0.8; margin-top: 4px; }
+        /* ACCION INMEDIATA (Highlight) */
+        .action-box { background: #eff6ff; border: 1px solid #bfdbfe; border-left: 4px solid #2563eb; padding: 15px; border-radius: 5px; font-size: 13px; color: #1e3a8a; }
 
-        /* Cuerpo del Reporte */
-        .content { padding: 40px; flex-grow: 1; }
+        /* EVIDENCIA */
+        .img-container { text-align: center; margin-top: 15px; padding: 10px; border: 2px dashed #cbd5e1; border-radius: 8px; }
+        .img-container img { max-width: 100%; max-height: 300px; border-radius: 5px; }
 
-        /* Títulos de Sección */
-        .section-title {
-            font-size: 11px;
-            text-transform: uppercase;
-            color: #64748b;
-            font-weight: 800;
-            border-bottom: 2px solid #e2e8f0;
-            margin-top: 30px;
-            margin-bottom: 15px;
-            padding-bottom: 5px;
-            letter-spacing: 0.5px;
-        }
+        /* FOOTER */
+        .footer { position: absolute; bottom: 0; left: 0; width: 100%; background: #f1f5f9; border-top: 1px solid #e2e8f0; padding: 15px 40px; display: flex; justify-content: space-between; font-size: 10px; color: #64748b; box-sizing: border-box;}
 
-        /* Grillas de Datos */
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 15px; }
-        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 15px; }
-
-        /* Cajas de Datos */
-        .data-box {
-            background: #f8fafc;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            padding: 10px 15px;
-        }
-        .label { font-size: 9px; text-transform: uppercase; color: #64748b; font-weight: 700; display: block; margin-bottom: 4px; }
-        .value { font-size: 14px; font-weight: 600; color: #1e293b; }
-
-        /* Badge de Riesgo */
-        .risk-badge {
-            background-color: <?php echo $bg_riesgo; ?>;
-            color: white;
-            padding: 8px 0;
-            text-align: center;
-            border-radius: 6px;
-            font-weight: 800;
-            text-transform: uppercase;
-            border: 2px solid rgba(0,0,0,0.1);
-        }
-
-        /* Cajas de Texto Largo */
-        .text-area {
-            background: white;
-            border: 1px solid #cbd5e1;
-            border-left: 4px solid #0f172a;
-            padding: 15px;
-            border-radius: 4px;
-            font-size: 13px;
-            line-height: 1.5;
-            color: #334155;
-            text-align: justify;
-        }
-
-        .action-area {
-            background: #eff6ff; /* Azul muy claro */
-            border: 1px solid #bfdbfe;
-            border-left: 4px solid #2563eb;
-            padding: 15px;
-            border-radius: 4px;
-            font-size: 13px;
-            color: #1e40af;
-        }
-
-        /* Imagen */
-        .evidence-box {
-            margin-top: 10px;
-            text-align: center;
-            border: 2px dashed #cbd5e1;
-            padding: 10px;
-            border-radius: 8px;
-            background: #f1f5f9;
-        }
-        .evidence-img {
-            max-width: 100%;
-            max-height: 300px;
-            border-radius: 4px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
-
-        /* Firmas */
-        .signatures {
-            margin-top: 60px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 60px;
-            padding: 0 20px;
-        }
-        .sign-line {
-            border-top: 1px solid #334155;
-            text-align: center;
-            padding-top: 10px;
-        }
-        .sign-title { font-weight: 700; font-size: 12px; color: #0f172a; text-transform: uppercase; }
-        .sign-desc { font-size: 10px; color: #64748b; }
-
-        /* Pie de Página */
-        .footer {
-            background: #f8fafc;
-            border-top: 1px solid #e2e8f0;
-            padding: 15px 40px;
-            font-size: 10px;
-            color: #94a3b8;
-            display: flex;
-            justify-content: space-between;
-            margin-top: auto; /* Empujar al fondo */
-        }
-
-        /* Botón Flotante para Imprimir */
-        .btn-print {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            background: #2563eb;
-            color: white;
-            padding: 15px 30px;
-            border-radius: 50px;
-            font-weight: 700;
-            border: none;
-            box-shadow: 0 10px 20px rgba(37, 99, 235, 0.4);
-            cursor: pointer;
-            z-index: 1000;
-            transition: transform 0.2s;
-        }
-        .btn-print:hover { transform: scale(1.05); background: #1d4ed8; }
-
-        /* Ocultar cosas al imprimir */
-        @media print {
-            body { background: white; padding: 0; }
-            .sheet { box-shadow: none; width: 100%; height: auto; }
-            .btn-print { display: none; }
-        }
+        @media print { body { background: white; padding: 0; } .page { box-shadow: none; } button { display: none; } }
+        .btn-print { position: fixed; top: 20px; right: 20px; padding: 10px 20px; background: #2563eb; color: white; border: none; cursor: pointer; border-radius: 5px; font-weight: bold; }
     </style>
 </head>
 <body>
+    <button class="btn-print" onclick="window.print()">IMPRIMIR / PDF</button>
 
-    <button class="btn-print" onclick="window.print()">🖨️ IMPRIMIR / GUARDAR PDF</button>
-
-    <div class="sheet">
+    <div class="page">
         <div class="header">
-            <div>
-                <h1 class="logo-text">VITAPRO <span style="font-weight:300">SST</span></h1>
-                <div class="logo-sub">Gestión de Seguridad Industrial</div>
-            </div>
-            <div class="report-meta">
-                <div class="report-id">REPORTE #<?php echo str_pad($r['id'], 6, '0', STR_PAD_LEFT); ?></div>
-                <div class="report-date"><?php echo date('d/m/Y H:i', strtotime($r['fecha'])); ?></div>
+            <div class="logo">VITAPRO <span>SST</span></div>
+            <div class="meta">
+                REPORTE DE INCIDENTE<br>
+                <strong>#<?php echo str_pad($r['id'], 6, '0', STR_PAD_LEFT); ?></strong><br>
+                <?php echo date('d/m/Y H:i', strtotime($r['fecha'])); ?>
             </div>
         </div>
 
-        <div class="content">
+        <div class="body-content">
             
-            <div class="section-title">01. Información General</div>
-            <div class="grid-2">
-                <div class="data-box">
-                    <span class="label">Reportado Por</span>
-                    <div class="value"><?php echo $r['nombre']; ?></div>
-                    <div style="font-size:10px; color:#64748b; margin-top:2px;">
-                        <?php echo $r['tipo_usuario']; ?> <?php echo $r['empresa_contratista'] ? ' - '.$r['empresa_contratista'] : ''; ?>
-                    </div>
-                </div>
-                <div class="data-box">
-                    <span class="label">Área / Ubicación</span>
-                    <div class="value"><?php echo $r['area']; ?></div>
-                </div>
+            <div class="section-title">1. Información del Evento</div>
+            <table class="data-table">
+                <tr>
+                    <th>Reportado Por</th>
+                    <td><?php echo $r['nombre']; ?> <span style="font-size:11px; color:#64748b; font-weight:normal;">(<?php echo $r['tipo_usuario']; ?>)</span></td>
+                </tr>
+                <tr>
+                    <th>Área / Ubicación</th>
+                    <td><?php echo $r['area']; ?></td>
+                </tr>
+                <tr>
+                    <th>Empresa Contratista</th>
+                    <td><?php echo $r['empresa_contratista'] ?: 'N/A'; ?></td>
+                </tr>
+            </table>
+
+            <div class="section-title">2. Clasificación y Riesgo</div>
+            <table class="data-table">
+                <tr>
+                    <th>Tipo de Hallazgo</th>
+                    <td><?php echo $r['tipo_hallazgo']; ?></td>
+                    <th>Clasificación</th>
+                    <td><?php echo $r['causa_especifica'] ?: 'General'; ?></td>
+                </tr>
+                <tr>
+                    <th>Nivel de Riesgo</th>
+                    <td style="color:<?php echo $color; ?>; text-transform:uppercase;"><?php echo $r['nivel_riesgo']; ?></td>
+                    <th>Aviso SAP</th>
+                    <td><?php echo $r['aviso_sap'] ?: '-'; ?></td>
+                </tr>
+            </table>
+
+            <div class="section-title">3. Detalle y Gestión</div>
+            
+            <p style="font-size:11px; font-weight:bold; color:#64748b; margin-bottom:5px;">DESCRIPCIÓN DEL HALLAZGO</p>
+            <div class="text-box">
+                <?php echo nl2br($descripcion); ?>
             </div>
             
-            <div class="section-title">02. Clasificación del Hallazgo</div>
-            <div class="grid-3">
-                <div class="data-box">
-                    <span class="label">Tipo</span>
-                    <div class="value"><?php echo $r['tipo_hallazgo']; ?></div>
-                </div>
-                <div class="data-box">
-                    <span class="label">Clasificación</span>
-                    <div class="value"><?php echo $r['causa_especifica'] ?: 'General'; ?></div>
-                </div>
-                <div class="risk-badge">
-                    <span style="display:block; font-size:9px; opacity:0.8; font-weight:normal;">NIVEL DE RIESGO</span>
-                    <?php echo strtoupper($r['nivel_riesgo']); ?>
-                </div>
+            <br>
+
+            <p style="font-size:11px; font-weight:bold; color:#2563eb; margin-bottom:5px;">ACCIÓN INMEDIATA TOMADA</p>
+            <div class="action-box">
+                <?php echo nl2br($accion); ?>
             </div>
 
-            <div class="section-title">03. Análisis del Evento</div>
-            
-            <div style="margin-bottom: 20px;">
-                <span class="label" style="margin-bottom:5px;">Descripción del Hallazgo</span>
-                <div class="text-area">
-                    <?php echo nl2br($desc_real); ?>
-                </div>
-            </div>
-
-            <div style="margin-bottom: 20px;">
-                <span class="label" style="margin-bottom:5px; color:#2563eb;">Acción Inmediata / Control</span>
-                <div class="action-area">
-                    <strong>ACCIÓN TOMADA:</strong> <?php echo nl2br($accion); ?>
-                </div>
-            </div>
-
-            <div class="grid-2">
-                <div class="data-box">
-                    <span class="label">Aviso SAP Relacionado</span>
-                    <div class="value"><?php echo $r['aviso_sap'] ?: 'N/A'; ?></div>
-                </div>
-                <div class="data-box">
-                    <span class="label">¿Parada de Actividad?</span>
-                    <div class="value" style="color: <?php echo $r['detuvo_actividad']=='SI'?'red':'inherit'; ?>">
-                        <?php echo $r['detuvo_actividad']; ?>
-                    </div>
-                </div>
-            </div>
-
-            <?php if(!empty($r['foto_path'])): ?>
-            <div class="section-title">04. Evidencia Fotográfica</div>
-            <div class="evidence-box">
-                <img src="<?php echo $r['foto_path']; ?>" class="evidence-img" alt="Evidencia del reporte">
+            <?php if($r['foto_path']): ?>
+            <div class="section-title">4. Evidencia Fotográfica</div>
+            <div class="img-container">
+                <img src="<?php echo $r['foto_path']; ?>">
             </div>
             <?php endif; ?>
 
-            <div class="signatures">
-                <div class="sign-line">
-                    <div class="sign-title">Firma del Reportante</div>
-                    <div class="sign-desc">Declaro que la información es verídica</div>
+            <div style="margin-top: 60px; display: flex; justify-content: space-around;">
+                <div style="text-align: center; width: 200px;">
+                    <div style="border-bottom: 1px solid #333; margin-bottom: 5px;"></div>
+                    <div style="font-size: 11px; font-weight: bold;">Firma Reportante</div>
                 </div>
-                <div class="sign-line">
-                    <div class="sign-title">Supervisor / SST</div>
-                    <div class="sign-desc">Revisión y Validación</div>
+                <div style="text-align: center; width: 200px;">
+                    <div style="border-bottom: 1px solid #333; margin-bottom: 5px;"></div>
+                    <div style="font-size: 11px; font-weight: bold;">Visto Bueno SST</div>
                 </div>
             </div>
 
         </div>
 
         <div class="footer">
-            <div>Generado por Sistema de Gestión SST - Vitapro</div>
-            <div>Documento Interno Confidencial</div>
+            <div>Sistema de Gestión SST - Vitapro</div>
+            <div>Documento Interno</div>
             <div>Pag. 1/1</div>
         </div>
     </div>
-
 </body>
 </html>
