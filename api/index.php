@@ -39,7 +39,7 @@
             padding: 40px 0; 
             margin-bottom: -40px; 
             text-align: center; 
-            padding-bottom: 80px; /* Espacio para que la tarjeta suba */
+            padding-bottom: 80px;
         }
         
         /* Tarjeta del Formulario */
@@ -104,7 +104,7 @@
 </head>
 <body>
 
-    <a href="login.php" class="admin-btn">🔒 Admin Panel</a>
+    <a href="/api/login.php" class="admin-btn">🔒 Admin Panel</a>
 
     <div class="header">
         <h2 class="fw-bold m-0">REPORTE DE SEGURIDAD</h2>
@@ -213,7 +213,6 @@
     </div>
 
     <script>
-        // 1. Lógica para habilitar campo empresa si es contratista
         function toggleEmpresa() {
             const tipo = document.getElementById('tipoUsuario').value;
             const input = document.getElementById('empresaInput');
@@ -229,7 +228,6 @@
             }
         }
 
-        // 2. Detectar si el reporte se guardó correctamente (mensaje URL)
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('status') === 'success') {
             Swal.fire({
@@ -239,12 +237,10 @@
                 confirmButtonColor: '#2563eb',
                 confirmButtonText: 'Entendido'
             }).then(() => {
-                // Limpiar la URL
                 window.history.replaceState(null, null, window.location.pathname);
             });
         }
 
-        // 3. Efecto de carga al enviar (Evita doble clic)
         document.getElementById('sstForm').addEventListener('submit', function() {
             const btn = document.getElementById('submitBtn');
             btn.innerHTML = '⏳ ENVIANDO...';
