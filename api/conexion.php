@@ -1,35 +1,38 @@
 <?php
 // api/conexion.php
 
-// 1. HOST: (Tu proyecto Supabase)
-$host = "db.piliozcqxjhcpeewpicx.supabase.co";
+// 1. HOST REGIONAL (Este fuerza IPv4 y evita el error de Vercel)
+// Nota: Asumo que tu proyecto está en US East (es lo estándar).
+$host = "aws-0-us-east-1.pooler.supabase.com";
 
-// 2. Datos por defecto
+// 2. ID DE TU PROYECTO SUPABASE
+$project_id = "piliozcqxjhcpeewpicx";
+
+// 3. BASE DE DATOS Y USUARIO
 $db = "postgres";
-$user = "postgres";
+// ¡OJO AQUÍ! El usuario ahora es "usuario.proyecto" para que el pooler sepa dónde ir
+$user = "postgres.$project_id"; 
 
-// 3. TU CONTRASEÑA (La que definiste: nIcovita2025)
+// 4. TU CONTRASEÑA
 $pass = "nIcovita2025";
 
-// --- IMPORTANTE: PUERTO 6543 ---
-// Si dice 5432, fallará en Vercel. Tiene que ser 6543.
+// 5. PUERTO DEL POOLER
 $port = "6543"; 
 
 try {
+    // String de conexión
     $dsn = "pgsql:host=$host;port=$port;dbname=$db;options='--client_encoding=UTF8'";
     
     $options = [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        
-        // --- IMPORTANTE: EMULATE_PREPARES en TRUE ---
-        // Obligatorio para el puerto 6543.
-        PDO::ATTR_EMULATE_PREPARES => true, 
+        PDO::ATTR_EMULATE_PREPARES => true, // Obligatorio para puerto 6543
     ];
     
     $pdo = new PDO($dsn, $user, $pass, $options);
 
 } catch (PDOException $e) {
+    // Si sigue fallando, es probable que tu región no sea US-East-1.
     die("Error de conexión: " . $e->getMessage());
 }
 ?>
