@@ -1,36 +1,35 @@
 <?php
 // api/conexion.php
 
-// 1. Host (Tu proyecto Supabase)
+// 1. HOST: (Tu proyecto Supabase)
 $host = "db.piliozcqxjhcpeewpicx.supabase.co";
 
-// 2. Datos por defecto de Supabase
+// 2. Datos por defecto
 $db = "postgres";
 $user = "postgres";
 
-// 3. TU CONTRASEÑA (La que me acabas de dar)
+// 3. TU CONTRASEÑA (La que definiste: nIcovita2025)
 $pass = "nIcovita2025";
 
-// 4. Puerto estándar
-$port = "5432";
+// --- IMPORTANTE: PUERTO 6543 ---
+// Si dice 5432, fallará en Vercel. Tiene que ser 6543.
+$port = "6543"; 
 
 try {
-    // Cadena de conexión para PostgreSQL
     $dsn = "pgsql:host=$host;port=$port;dbname=$db;options='--client_encoding=UTF8'";
-
+    
     $options = [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES => false,
+        
+        // --- IMPORTANTE: EMULATE_PREPARES en TRUE ---
+        // Obligatorio para el puerto 6543.
+        PDO::ATTR_EMULATE_PREPARES => true, 
     ];
-
-    $pdo = new PDO($dsn, $user, $pass, $options);
     
-    // Si quieres verificar que conecta, descomenta la siguiente línea:
-    // echo "¡Conectado exitosamente!";
+    $pdo = new PDO($dsn, $user, $pass, $options);
 
 } catch (PDOException $e) {
-    // Si falla, mostramos el error
     die("Error de conexión: " . $e->getMessage());
 }
 ?>
