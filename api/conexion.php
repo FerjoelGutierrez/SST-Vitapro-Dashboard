@@ -1,36 +1,36 @@
 <?php
 // api/conexion.php
 
-// 1. HOST: Lo saqué de tu URL de Supabase
-$host = "db.piliozcqxjhcpeewpicx.supabase.co"; 
+// 1. Host (Tu proyecto Supabase)
+$host = "db.piliozcqxjhcpeewpicx.supabase.co";
 
-// 2. DATABASE y USER: Siempre son estos por defecto en Supabase
+// 2. Datos por defecto de Supabase
 $db = "postgres";
-$user = "postgres"; 
+$user = "postgres";
 
-// 3. CONTRASEÑA: ¡AQUÍ PONES LA QUE ACABAS DE CREAR O RECORDAR!
-// (NO es la 'sb_secret', es la contraseña que escribiste al crear el proyecto)
-$pass = "ESCRIBE_AQUI_TU_CONTRASEÑA_DE_BASE_DE_DATOS"; 
+// 3. TU CONTRASEÑA (La que me acabas de dar)
+$pass = "nIcovita2025";
 
-// 4. PUERTO: 5432 es el estándar
-$port = "5432"; 
+// 4. Puerto estándar
+$port = "5432";
 
 try {
+    // Cadena de conexión para PostgreSQL
     $dsn = "pgsql:host=$host;port=$port;dbname=$db;options='--client_encoding=UTF8'";
-    
+
     $options = [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES => false,
     ];
-    
+
     $pdo = new PDO($dsn, $user, $pass, $options);
     
-    // Si quieres probar si conecta, descomenta la linea de abajo:
-    // echo "¡Conexión Exitosa!"; 
+    // Si quieres verificar que conecta, descomenta la siguiente línea:
+    // echo "¡Conectado exitosamente!";
 
 } catch (PDOException $e) {
-    // Si falla, muestra el error
+    // Si falla, mostramos el error
     die("Error de conexión: " . $e->getMessage());
 }
 ?>
